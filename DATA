@@ -1,0 +1,2 @@
+CLUSTER_NAME=cluster-name
+MASTERS=master1 master2

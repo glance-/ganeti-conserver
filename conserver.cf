@@ -1,0 +1,82 @@
+# The character '&' in logfile names are substituted with the console
+# name.
+# vim: noet ts=8 sw=8
+#
+config * {
+}
+default full {
+	rw *;
+}
+default * {
+	logfile /var/log/conserver/&.log;
+	timestamp "";
+	include full;
+
+	logfilemax 2m;
+	rw @adm,root;
+	#execrunas conservr:dailout;
+	master 127.0.0.1;
+# Make sure consoles do not spin if something breaks
+	initspinmax 10;
+	initspintimer 120;
+	# Auto up on connect
+	options reinitoncc;
+}
+
+##
+## list of clients we allow
+##
+access * {
+	# add Cluster-ip and masters ip
+	trusted 127.0.0.1,cluster-name,master1,master2;
+	allowed 127.0.0.1,cluster-name,master1,master2;
+}
+
+task d {
+	description "shutDown a ganeti instance";
+	cmd "ssh -l root H gnt-instance shutdown C";
+	subst H=hs,C=cs;
+	confirm yes;
+}
+
+task s {
+	description "Startup a ganeti instance";
+	cmd "ssh -l root H gnt-instance startup C";
+	subst H=hs,C=cs;
+	confirm yes;
+}
+
+task r {
+	description "Reboot a ganeti instance";
+	cmd "ssh -l root H gnt-instance reboot C";
+	subst H=hs,C=cs;
+	confirm yes;
+}
+
+task b {
+	description "Send Break to a ganeti instance";
+	cmd "ssh -l root H /etc/conserver/send-break-to-ganeti-vm.sh C";
+	subst H=hs,C=cs;
+	confirm no;
+}
+
+task e {
+	description "REset a ganeti instance";
+	cmd "ssh -l root H /etc/conserver/reset-ganeti-vm.sh C";
+	subst H=hs,C=cs;
+	confirm yes;
+}
+
+# Ganeti console and power
+# host = ganeti-cluster
+# console = instance name
+default ganeti {
+	type exec;
+	break 6;
+	exec ssh -b cluster-name -tt -l root H gnt-instance console C;
+	execsubst H=hs,C=cs;
+	tasklist d,s,r;
+	motd "Ganeti console, break via task";
+}
+
+#include /etc/conserver/conserver-ganeti.cf
